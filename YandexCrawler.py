@@ -1,10 +1,10 @@
 import json
 import argparse
-import requests as req
 from urllib.request import Request, urlopen
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import asyncio
+import re
 
 #  ex) python YandexCrawler -name dog
 parser = argparse.ArgumentParser()
@@ -37,13 +37,19 @@ async def PrintAll(i, driver, json_data):
         t = urlopen(request).read()
     except Exception:
         return
-    filename = searchWord+str(i[0]+1)+'.jpg'
+
+    filename = searchWord + ' ' + str(i[0]+1)
+    filename = re.sub('[\\\/:*?"<>|]', '', filename)
+    if attr_src[len(attr_src)-4:] not in('.png', '.jpg', '.gif'):
+        filename += '.png'
+    else:
+        filename += attr_src[len(attr_src)-4:]
+
+    # ex) print <SEARCH WORD>.jpg : <attr_src>
+    print(filename + " : " + attr_src)                                   
     json_data.append({'URL':attr_src})
     with open(filename,"wb") as f:
         f.write(t)
-
-    # ex) print <SEARCH WORD>.jpg : <attr_src>
-    print(filename + " : " + attr_src) 
 
 # Yandex that Parsing Google Image
 async def YandexImageCrawler():
@@ -59,6 +65,8 @@ async def YandexImageCrawler():
     options.add_argument('window-size=1920x1080')
     options.add_argument('--disable-gpu')
     options.add_argument('--log-level=3')
+    options.add_argument('--ignore-certificate-errors-spki-list')
+    
 
     # Chromedriver 
     driver = webdriver.Chrome("chromedriver.exe", chrome_options=options)
